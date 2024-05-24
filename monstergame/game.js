@@ -9,12 +9,12 @@ document.addEventListener("DOMContentLoaded", function () {
         gameBoard.appendChild(cell);
     }
 
-    // Define players
+    // Define players and their territories
     const players = [
-        { id: 1, name: 'Player 1', class: 'player1', monsters: [] },
-        { id: 2, name: 'Player 2', class: 'player2', monsters: [] },
-        { id: 3, name: 'Player 3', class: 'player3', monsters: [] },
-        { id: 4, name: 'Player 4', class: 'player4', monsters: [] }
+        { id: 1, name: 'Player 1', class: 'player1', monsters: [], territory: [...Array(20).keys()] },
+        { id: 2, name: 'Player 2', class: 'player2', monsters: [], territory: [...Array(20).keys()].map(i => i + 80) },
+        { id: 3, name: 'Player 3', class: 'player3', monsters: [], territory: [...Array(10).keys()].flatMap(i => [i * 10, i * 10 + 1]) },
+        { id: 4, name: 'Player 4', class: 'player4', monsters: [], territory: [...Array(10).keys()].flatMap(i => [i * 10 + 8, i * 10 + 9]) }
     ];
 
     let currentPlayerIndex = 0;
@@ -40,16 +40,18 @@ document.addEventListener("DOMContentLoaded", function () {
         const currentPlayer = players[currentPlayerIndex];
 
         if (currentTurnStage === 'place') {
-            if (!currentPlayer.monsters.includes(cellIndex)) {
+            if (!currentPlayer.monsters.includes(cellIndex) && currentPlayer.territory.includes(cellIndex)) {
                 currentPlayer.monsters.push(cellIndex);
                 placedMonsterIndex = cellIndex;
                 currentTurnStage = 'move';
                 renderBoard();
+            } else {
+                alert("You can only place monsters in your territory.");
             }
         } else if (currentTurnStage === 'move') {
             if (currentPlayer.monsters.includes(cellIndex)) {
                 const newPosition = prompt("Enter new position (0-99):", cellIndex);
-                if (newPosition !== null && newPosition >= 0 && newPosition < 100) {
+                if (newPosition !== null && newPosition >= 0 && newPosition < 100 && currentPlayer.territory.includes(parseInt(newPosition))) {
                     if (cellIndex !== placedMonsterIndex) {
                         const index = currentPlayer.monsters.indexOf(cellIndex);
                         currentPlayer.monsters[index] = parseInt(newPosition);
@@ -57,6 +59,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     } else {
                         alert("You cannot move the monster you just placed.");
                     }
+                } else {
+                    alert("Invalid move. You can only move to a position within your territory.");
                 }
             } else {
                 alert("You can only move your own monsters.");

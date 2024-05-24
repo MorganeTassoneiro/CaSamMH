@@ -27,10 +27,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Place the monsters on the board
         players.forEach(player => {
-            player.monsters.forEach(position => {
+            player.monsters.forEach(monster => {
                 const monsterElement = document.createElement('div');
-                monsterElement.classList.add('player', player.class);
-                gameBoard.children[position].appendChild(monsterElement);
+                monsterElement.classList.add('player', player.class, monster.type);
+                gameBoard.children[monster.position].appendChild(monsterElement);
             });
         });
     }
@@ -40,21 +40,27 @@ document.addEventListener("DOMContentLoaded", function () {
         const currentPlayer = players[currentPlayerIndex];
 
         if (currentTurnStage === 'place') {
-            if (!currentPlayer.monsters.includes(cellIndex) && currentPlayer.territory.includes(cellIndex)) {
-                currentPlayer.monsters.push(cellIndex);
-                placedMonsterIndex = cellIndex;
-                currentTurnStage = 'move';
-                renderBoard();
+            if (currentPlayer.territory.includes(cellIndex)) {
+                const monsterType = prompt("Enter monster type (vampire, werewolf, ghost):");
+                if (['vampire', 'werewolf', 'ghost'].includes(monsterType)) {
+                    currentPlayer.monsters.push({ position: cellIndex, type: monsterType });
+                    placedMonsterIndex = cellIndex;
+                    currentTurnStage = 'move';
+                    renderBoard();
+                } else {
+                    alert("Invalid monster type. Please enter vampire, werewolf, or ghost.");
+                }
             } else {
                 alert("You can only place monsters in your territory.");
             }
         } else if (currentTurnStage === 'move') {
-            if (currentPlayer.monsters.includes(cellIndex)) {
-                const newPosition = prompt("Enter new position (0-99):", cellIndex);
-                if (newPosition !== null && newPosition >= 0 && newPosition < 100 && currentPlayer.territory.includes(parseInt(newPosition))) {
+            const monster = currentPlayer.monsters.find(m => m.position === cellIndex);
+            if (monster) {
+                const newPosition = parseInt(prompt("Enter new position (0-99):", cellIndex));
+                if (newPosition >= 0 && newPosition < 100 && currentPlayer.territory.includes(newPosition) && isValidMove(cellIndex, newPosition)) {
                     if (cellIndex !== placedMonsterIndex) {
-                        const index = currentPlayer.monsters.indexOf(cellIndex);
-                        currentPlayer.monsters[index] = parseInt(newPosition);
+                        monster.position = newPosition;
+                        resolveConflicts();
                         renderBoard();
                     } else {
                         alert("You cannot move the monster you just placed.");
@@ -66,6 +72,79 @@ document.addEventListener("DOMContentLoaded", function () {
                 alert("You can only move your own monsters.");
             }
         }
+    }
+
+    function isValidMove(start, end) {
+        const startRow = Math.floor(start / 10);
+        const startCol = start % 10;
+        const endRow = Math.floor(end / 10);
+        const endCol = end % 10;
+
+        const rowDiff = Math.abs(startRow - endRow);
+        const colDiff = Math.abs(startCol - endCol);
+
+        // Check horizontal or vertical move
+        if (rowDiff === 0 || colDiff === 0) {
+            return true;
+        }
+
+        // Check diagonal move
+        if (rowDiff <= 2 && colDiff <= 2) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function resolveConflicts() {
+        const positions = {};
+
+        // Gather all monsters by their positions
+        players.forEach(player => {
+            player.monsters.forEach(monster => {
+                if (!positions[monster.position]) {
+                    positions[monster.position] = [];
+                }
+                positions[monster.position].push({ player, monster });
+            });
+        });
+
+        // Resolve conflicts at each position
+        Object.keys(positions).forEach(position => {
+            if (positions[position].length > 1) {
+                const conflictMonsters = positions[position];
+
+                // If there are exactly two monsters, resolve based on the type rules
+                if (conflictMonsters.length === 2) {
+                    const [first, second] = conflictMonsters;
+                    let toRemove = null;
+
+                    if ((first.monster.type === 'vampire' && second.monster.type === 'werewolf') ||
+                        (first.monster.type === 'werewolf' && second.monster.type === 'ghost') ||
+                        (first.monster.type === 'ghost' && second.monster.type === 'vampire')) {
+                        toRemove = second;
+                    } else if ((second.monster.type === 'vampire' && first.monster.type === 'werewolf') ||
+                               (second.monster.type === 'werewolf' && first.monster.type === 'ghost') ||
+                               (second.monster.type === 'ghost' && first.monster.type === 'vampire')) {
+                        toRemove = first;
+                    } else if (first.monster.type === second.monster.type) {
+                        // If the same type, remove both
+                        first.player.monsters = first.player.monsters.filter(m => m !== first.monster);
+                        second.player.monsters = second.player.monsters.filter(m => m !== second.monster);
+                        return;
+                    }
+
+                    if (toRemove) {
+                        toRemove.player.monsters = toRemove.player.monsters.filter(m => m !== toRemove.monster);
+                    }
+                } else {
+                    // If more than two monsters, remove all of them
+                    conflictMonsters.forEach(({ player, monster }) => {
+                        player.monsters = player.monsters.filter(m => m !== monster);
+                    });
+                }
+            }
+        });
     }
 
     function getPlayerWithFewestMonsters() {

@@ -30,7 +30,6 @@ body {
     border-radius: 50%;
 }
 
-.player1 { background-color: red; }
-.player2 { background-color: blue; }
-.player3 { background-color: green; }
-.player4 { background-color: yellow; }
+.player.vampire { background-color: darkred; }
+.player.werewolf { background-color: gray; }
+.player.ghost { background-color: lightblue; }

@@ -68,8 +68,20 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function getPlayerWithFewestMonsters() {
+        const minMonsters = Math.min(...players.map(player => player.monsters.length));
+        const playersWithMinMonsters = players.filter(player => player.monsters.length === minMonsters);
+        if (playersWithMinMonsters.length > 1) {
+            return playersWithMinMonsters[Math.floor(Math.random() * playersWithMinMonsters.length)].id - 1;
+        }
+        return playersWithMinMonsters[0].id - 1;
+    }
+
     function nextTurn() {
         currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        if (currentPlayerIndex === 0) {
+            currentPlayerIndex = getPlayerWithFewestMonsters();
+        }
         currentTurnStage = 'place';
         placedMonsterIndex = null;
         alert(`It's now ${players[currentPlayerIndex].name}'s turn!`);
@@ -84,5 +96,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     renderBoard();
+    currentPlayerIndex = getPlayerWithFewestMonsters();
     alert(`It's now ${players[currentPlayerIndex].name}'s turn!`);
 });

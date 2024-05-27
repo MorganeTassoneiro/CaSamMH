@@ -100,14 +100,28 @@ function isValidPlacement(game, playerId, x, y) {
 // Function to validate if a monster move is valid
 function isValidMove(game, playerId, fromX, fromY, toX, toY) {
   // Check if the move is valid based on the movement rules
-  if (Math.abs(toX - fromX) <= 2 && Math.abs(toY - fromY) <= 2 && 
-      (Math.abs(toX - fromX) === Math.abs(toY - fromY) || 
-      toX === fromX || 
-      toY === fromY)) {
-    // Ensure the destination is not occupied by another player's monster
-    if (game.board[toX][toY] === null || game.board[toX][toY].player === playerId) {
-      return true;
+  if (
+    (Math.abs(toX - fromX) <= 2 && Math.abs(toY - fromY) <= 2) && // Move up to 2 squares diagonally
+    (Math.abs(toX - fromX) === Math.abs(toY - fromY) || toX === fromX || toY === fromY) && // Move horizontally, vertically, or diagonally
+    !isBlocked(game, fromX, fromY, toX, toY) // Check if the path is blocked
+  ) {
+    return true;
+  }
+  return false;
+}
+
+// Function to check if the path is blocked by other players' monsters
+function isBlocked(game, fromX, fromY, toX, toY) {
+  const dx = Math.sign(toX - fromX);
+  const dy = Math.sign(toY - fromY);
+  let x = fromX + dx;
+  let y = fromY + dy;
+  while (x !== toX || y !== toY) {
+    if (game.board[x][y] && game.board[x][y].player !== game.board[fromX][fromY].player) {
+      return true; // Path is blocked by another player's monster
     }
+    x += dx;
+    y += dy;
   }
   return false;
 }

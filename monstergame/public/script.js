@@ -39,5 +39,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+   // Function to move a monster (NEXT TO IMPLEMET)
+   function moveMonster(x, y) {
+  }
+   // Function to update the board with the current game state
+   function updateBoard(board) {
+    for (let i = 0; i < 10; i++) {
+      for (let j = 0; j < 10; j++) {
+        const cell = document.querySelector(`td[data-x="${i}"][data-y="${j}"]`);
+        if (board[i][j]) {
+          cell.textContent = board[i][j].type; // Display the monster type in the cell
+        } else {
+          cell.textContent = ''; // Clear the cell if there's no monster
+        }
+      }
+    }
+  }
+
   });
   

@@ -201,27 +201,32 @@ function isBlocked(game, fromX, fromY, toX, toY) {
 // Function to resolve conflicts when monsters end up on the same square
 function resolveConflict(game, x, y) {
   let monsters = game.board[x][y]; // Get the monsters at the given position
+
   if (Array.isArray(monsters) && monsters.length > 1) {
     let types = monsters.map(m => m.type); // Get the types of the monsters
+    let remainingMonster = null; // To store the monster that will remain
 
     // Handle conflicts based on monster types
     if (types.includes('vampire') && types.includes('werewolf')) {
+      remainingMonster = monsters.find(m => m.type === 'vampire');
       removeMonster(game, x, y, 'werewolf'); // Remove the werewolf if there's a vampire and a werewolf
-    }
-    if (types.includes('werewolf') && types.includes('ghost')) {
+    } else if (types.includes('werewolf') && types.includes('ghost')) {
+      remainingMonster = monsters.find(m => m.type === 'werewolf');
       removeMonster(game, x, y, 'ghost'); // Remove the ghost if there's a werewolf and a ghost
-    }
-    if (types.includes('ghost') && types.includes('vampire')) {
+    } else if (types.includes('ghost') && types.includes('vampire')) {
+      remainingMonster = monsters.find(m => m.type === 'ghost');
       removeMonster(game, x, y, 'vampire'); // Remove the vampire if there's a ghost and a vampire
-    }
-    if (types.filter(type => type === 'vampire').length > 1) {
+    } else if (types.filter(type => type === 'vampire').length > 1) {
       removeAllOfType(game, x, y, 'vampire'); // Remove both vampires if there are two vampires
-    }
-    if (types.filter(type => type === 'werewolf').length > 1) {
+    } else if (types.filter(type => type === 'werewolf').length > 1) {
       removeAllOfType(game, x, y, 'werewolf'); // Remove both werewolves if there are two werewolves
-    }
-    if (types.filter(type => type === 'ghost').length > 1) {
+    } else if (types.filter(type => type === 'ghost').length > 1) {
       removeAllOfType(game, x, y, 'ghost'); // Remove both ghosts if there are two ghosts
+    }
+
+    // After resolving the conflict, ensure only one monster remains
+    if (remainingMonster) {
+      game.board[x][y] = remainingMonster;
     }
   }
 }

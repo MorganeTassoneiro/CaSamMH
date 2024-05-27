@@ -25,6 +25,19 @@ document.addEventListener('DOMContentLoaded', () => {
       moveMonster(x, y); // Move a monster if the cell is not empty
     }
   }
-  
+  // Function to place a monster
+  function placeMonster(x, y) {
+    fetch('/place_monster', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, playerId, monsterType: 'vampire', x, y }) // Send request to place a vampire at the specified coordinates
+    }).then(response => response.json()).then(data => {
+      if (data.success) {
+        updateBoard(data.game.board); // Update the board if placement is successful
+      } else {
+        alert(data.message); // Show an error message if placement is invalid
+      }
+    });
+  }
   });
   

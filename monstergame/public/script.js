@@ -14,5 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
       board.appendChild(row); // Append row to the board
     }
+
+     // Function to handle placing or moving a monster
+  function placeOrMoveMonster(event) {
+    const x = event.target.dataset.x;
+    const y = event.target.dataset.y;
+    if (event.target.textContent === '') {
+      placeMonster(x, y); // Place a monster if the cell is empty
+    } else {
+      moveMonster(x, y); // Move a monster if the cell is not empty
+    }
+  }
+  
   });
   

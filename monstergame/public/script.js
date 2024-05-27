@@ -78,6 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
+  // Start by creating a game
+  createGame();
 
   });
   

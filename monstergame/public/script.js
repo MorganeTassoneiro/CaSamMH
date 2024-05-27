@@ -1,6 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     const board = document.getElementById('game-board'); // Get the game board element
     let gameId, playerId;
+    
+  // Function to create a game
+  function createGame() {
+    fetch('/create_game', {
+      method: 'POST'
+    }).then(response => response.json()).then(data => {
+      console.log('Game created:', data);
+      gameId = data.gameId; // Store the gameId for future requests
+      joinGame(gameId);
+    });
+  }
 
      // Initialize the board with 10x10 grid
       for (let i = 0; i < 10; i++) {

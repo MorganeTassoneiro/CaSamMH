@@ -105,6 +105,13 @@ function resolveConflict(game, x, y) {
     }
   }
 }
+// Function to remove a monster from the board
+function removeMonster(game, x, y, type) {
+  let index = game.board[x][y].findIndex(m => m.type === type); // Find the index of the monster to be removed
+  if (index > -1) {
+    game.board[x][y].splice(index, 1); // Remove the monster from the board
+  }
+}
 
 
 // Start the server

@@ -18,7 +18,8 @@ app.post('/create_game', (req, res) => {
     board: Array.from({ length: 10 }, () => Array(10).fill(null)), // Initialize a 10x10 game board
     players: {}, // Object to store player data
     turnOrder: [], // Array to store the order of players' turns
-    currentPlayer: null // Track the current player
+    currentPlayer: null, // Track the current player
+    turnsTaken: {} // Track turns taken by each player in the current round
   };
   console.log(`Game created with ID: ${newGameId}`);
   res.json({ gameId: newGameId }); // Respond with the new game ID
@@ -36,6 +37,7 @@ app.post('/join_game', (req, res) => {
     if (!games[gameId].currentPlayer) {
       games[gameId].currentPlayer = playerId; // Set the current player if not already set
     }
+    games[gameId].turnsTaken[playerId] = false; // Initialize turn taken to false for the player
     console.log(`Player ${playerId} joined game ${gameId}`);
     res.json({ success: true });
   } else {
@@ -53,7 +55,8 @@ app.post('/place_monster', (req, res) => {
     game.board[x][y] = { type: monsterType, player: playerId }; // Place the monster on the board
     game.players[playerId].monsters.push({ type: monsterType, x, y }); // Add the monster to the player's list of monsters
     console.log(`Monster placed by ${playerId} at (${x}, ${y})`);
-    checkEndTurn(game, playerId);
+    game.turnsTaken[playerId] = true; // Mark turn as taken
+    checkEndRound(game); // Check if the round should end
     res.json({ success: true, game });
   } else {
     console.log(`Invalid placement or not ${playerId}'s turn`);
@@ -84,7 +87,8 @@ app.post('/move_monster', (req, res) => {
     monster.y = toY;
     resolveConflict(game, toX, toY); // Resolve any conflicts at the new position
     console.log(`Monster moved by ${playerId} from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
-    checkEndTurn(game, playerId);
+    game.turnsTaken[playerId] = true; // Mark turn as taken
+    checkEndRound(game); // Check if the round should end
     res.json({ success: true, game });
   } else {
     console.log(`Invalid move or not ${playerId}'s turn`);
@@ -97,8 +101,9 @@ app.post('/end_turn', (req, res) => {
   const { gameId, playerId } = req.body;
   let game = games[gameId];
   if (game && game.currentPlayer === playerId) {
-    game.currentPlayer = getNextPlayer(game); // Set the next player
+    game.turnsTaken[playerId] = true; // Mark turn as taken
     console.log(`Player ${playerId} ended their turn in game ${gameId}`);
+    checkEndRound(game); // Check if the round should end
     res.json({ success: true });
   } else {
     res.json({ success: false, message: "Invalid request or not your turn" });
@@ -249,6 +254,21 @@ function getNextPlayer(game) {
 function checkEndTurn(game, playerId) {
   if (hasNoMovesLeft(game, playerId)) {
     console.log(`Player ${playerId} has no more moves. Ending turn automatically.`);
+    game.turnsTaken[playerId] = true; // Mark turn as taken
+    checkEndRound(game); // Check if the round should end
+  }
+}
+
+// Function to check if the round should end and handle end of round logic
+function checkEndRound(game) {
+  if (Object.values(game.turnsTaken).every(taken => taken)) {
+    console.log(`All players have taken their turns. Ending round.`);
+    // Reset turnsTaken for the next round
+    Object.keys(game.turnsTaken).forEach(playerId => game.turnsTaken[playerId] = false);
+    // Set the next player for the new round
+    game.currentPlayer = getNextPlayer(game);
+  } else {
+    // Set the next player for the current round
     game.currentPlayer = getNextPlayer(game);
   }
 }

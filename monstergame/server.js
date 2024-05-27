@@ -31,8 +31,11 @@ app.post('/join_game', (req, res) => {
       monsters: [], // Array to store the player's monsters
       edge: determinePlayerEdge(Object.keys(games[gameId].players).length) // Determine the player's edge based on the number of players
     };
-    games[gameId].turnOrder.push(playerId); // Add the player to the turn order
-    res.json({ success: true }); // Respond with success
+    games[gameId].turnOrder.push(playerId);
+    if (!games[gameId].currentPlayer) {
+      games[gameId].currentPlayer = playerId;
+    }
+    res.json({ success: true });
   } else {
     res.json({ success: false, message: "Game not found" }); // Respond with an error if the game doesn't exist
   }
@@ -40,12 +43,13 @@ app.post('/join_game', (req, res) => {
 
 // Route to place a monster on the board
 app.post('/place_monster', (req, res) => {
-  const { gameId, playerId, monsterType, x, y } = req.body; // Extract data from the request body
-  let game = games[gameId]; // Get the game state
-  if (game && isValidPlacement(game, playerId, x, y)) {
-    game.board[x][y] = { type: monsterType, player: playerId }; // Place the monster on the board
-    game.players[playerId].monsters.push({ type: monsterType, x, y }); // Add the monster to the player's list of monsters
-    res.json({ success: true, game }); // Respond with the updated game state
+  const { gameId, playerId, monsterType, x, y } = req.body;
+  let game = games[gameId];
+  if (game && game.currentPlayer === playerId && isValidPlacement(game, playerId, x, y)) {
+    game.board[x][y] = { type: monsterType, player: playerId };
+    game.players[playerId].monsters.push({ type: monsterType, x, y });
+    game.currentPlayer = getNextPlayer(game);
+    res.json({ success: true, game });
   } else {
     res.json({ success: false, message: "Invalid placement" }); // Respond with an error if the placement is invalid
   }
@@ -53,18 +57,19 @@ app.post('/place_monster', (req, res) => {
 
 // Route to move a monster on the board
 app.post('/move_monster', (req, res) => {
-  const { gameId, playerId, fromX, fromY, toX, toY } = req.body; // Extract data from the request body
-  let game = games[gameId]; // Get the game state
-  if (game && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
-    let monster = game.board[fromX][fromY]; // Get the monster to be moved
-    game.board[fromX][fromY] = null; // Remove the monster from its original position
-    game.board[toX][toY] = monster; // Place the monster at the new position
-    monster.x = toX; // Update the monster's coordinates
+  const { gameId, playerId, fromX, fromY, toX, toY } = req.body;
+  let game = games[gameId];
+  if (game && game.currentPlayer === playerId && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
+    let monster = game.board[fromX][fromY];
+    game.board[fromX][fromY] = null;
+    game.board[toX][toY] = monster;
+    monster.x = toX;
     monster.y = toY;
-    resolveConflict(game, toX, toY); // Resolve any conflicts at the new position
-    res.json({ success: true, game }); // Respond with the updated game state
+    resolveConflict(game, toX, toY);
+    game.currentPlayer = getNextPlayer(game);
+    res.json({ success: true, game });
   } else {
-    res.json({ success: false, message: "Invalid move" }); // Respond with an error if the move is invalid
+    res.json({ success: false, message: "Invalid move or not your turn" });
   }
 });
 

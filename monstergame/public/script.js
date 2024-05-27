@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const board = document.getElementById('game-board'); // Get the game board element
-    let gameId, playerId;
-    
+  const board = document.getElementById('game-board'); // Get the game board element
+  let gameId, playerId;
+
   // Function to create a game
   function createGame() {
     fetch('/create_game', {
@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
       joinGame(gameId);
     });
   }
+
   // Function to join a game
   function joinGame(gameId) {
     fetch('/join_game', {
@@ -25,31 +26,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-     // Initialize the board with 10x10 grid
-      for (let i = 0; i < 10; i++) {
-    const row = document.createElement('tr'); // Create a row
-    for (let j = 0; j < 10; j++) {
-      const cell = document.createElement('td'); // Create a cell
-      cell.dataset.x = i; // Set cell coordinates
-      cell.dataset.y = j;
-      cell.addEventListener('click', placeOrMoveMonster); // Add click event listener for placing or moving a monster
-      row.appendChild(cell); // Append cell to the row
-    }
+  //Initialize the board with 10x10 grid
+  function initializeBoard() {
+    for (let i = 0; i < 10; i++) {
+      const row = document.createElement('tr'); // Create a row
+      for (let j = 0; j < 10; j++) {
+        const cell = document.createElement('td'); // Create a cell
+        cell.dataset.x = i; // Set cell coordinates
+        cell.dataset.y = j;
+        cell.addEventListener('click', placeOrMoveMonster); // Add click event listener for placing or moving a monster
+        row.appendChild(cell); // Append cell to the row
+      }
       board.appendChild(row); // Append row to the board
     }
+  }
 
-     // Function to handle placing or moving a monster
+  // Function to handle placing or moving a monster
   function placeOrMoveMonster(event) {
-    const x = event.target.dataset.x;
-    const y = event.target.dataset.y;
+    const x = parseInt(event.target.dataset.x, 10);
+    const y = parseInt(event.target.dataset.y, 10);
+    console.log(`Attempting to place or move monster at (${x}, ${y})`);
     if (event.target.textContent === '') {
       placeMonster(x, y); // Place a monster if the cell is empty
     } else {
       moveMonster(x, y); // Move a monster if the cell is not empty
     }
   }
+
   // Function to place a monster
   function placeMonster(x, y) {
+    console.log(`Placing monster at (${x}, ${y})`);
     fetch('/place_monster', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,10 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
    // Function to move a monster (NEXT TO IMPLEMET)
-   function moveMonster(x, y) {
+  function moveMonster(x, y) {
+    // Logic to move a monster
   }
-   // Function to update the board with the current game state
-   function updateBoard(board) {
+
+  // Function to update the board with the current game state
+  function updateBoard(board) {
     for (let i = 0; i < 10; i++) {
       for (let j = 0; j < 10; j++) {
         const cell = document.querySelector(`td[data-x="${i}"][data-y="${j}"]`);
@@ -78,8 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
+
   // Start by creating a game
   createGame();
-
-  });
-  
+});

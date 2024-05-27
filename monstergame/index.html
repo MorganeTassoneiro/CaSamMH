@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monster Mayhem</title>
+</head>
+<body>
+  <h1>Monster Mayhem</h1>
+  <div>
+    <h2>Total Games Played: <span id="totalGames">0</span></h2>
+    <h2>Player Stats</h2>
+    <p>Wins: <span id="winCount">0</span></p>
+    <p>Losses: <span id="lossCount">0</span></p>
+  </div>
+  <script>
+    const playerId = 'player1';
+
+    // Fetch total games
+    function fetchTotalGames() {
+      fetch('/total_games')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('totalGames').textContent = data.totalGames;
+        });
+    }
+
+    // Fetch player stats
+    function fetchPlayerStats() {
+      fetch(`/player_stats/${playerId}`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('winCount').textContent = data.wins;
+          document.getElementById('lossCount').textContent = data.losses;
+        });
+    }
+
+    // Initial fetch
+    fetchTotalGames();
+    fetchPlayerStats();
+
+    // Periodic fetch
+    setInterval(fetchTotalGames, 5000);
+    setInterval(fetchPlayerStats, 5000);
+  </script>
+</body>
+</html>

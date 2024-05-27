@@ -89,6 +89,23 @@ function isValidMove(game, playerId, fromX, fromY, toX, toY) {
   }
   return false;
 }
+// Function to resolve conflicts when monsters end up on the same square
+function resolveConflict(game, x, y) {
+  let monsters = game.board[x][y]; // Get the monsters at the given position
+  if (Array.isArray(monsters) && monsters.length > 1) {
+    let types = monsters.map(m => m.type); // Get the types of the monsters
+    if (types.includes('vampire') && types.includes('werewolf')) {
+      removeMonster(game, x, y, 'werewolf'); // Remove the werewolf if there's a vampire and a werewolf
+    } else if (types.includes('werewolf') && types.includes('ghost')) {
+      removeMonster(game, x, y, 'ghost'); // Remove the ghost if there's a werewolf and a ghost
+    } else if (types.includes('ghost') && types.includes('vampire')) {
+      removeMonster(game, x, y, 'vampire'); // Remove the vampire if there's a ghost and a vampire
+    } else if (types[0] === types[1]) {
+      game.board[x][y] = null; // Remove both monsters if they are of the same type
+    }
+  }
+}
+
 
 // Start the server
 app.listen(port, () => {

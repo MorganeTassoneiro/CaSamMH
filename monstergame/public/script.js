@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(response => response.json()).then(data => {
       if (data.success) {
         updateBoard(data.game.board); // Update the board if placement is successful
+        checkEndTurn(); // Check if the turn should end automatically
       } else {
         alert(data.message); // Show an error message if placement is invalid
       }
@@ -100,13 +101,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         updateBoard(data.game.board); // Update the board if move is successful
         selectedMonster = null; // Clear the selected monster
+        checkEndTurn(); // Check if the turn should end automatically
       } else {
         alert(data.message); // Show an error message if move is invalid
       }
     });
   }
-   // Function to end the player's turn
-   function endTurn() {
+
+  // Function to end the player's turn
+  function endTurn() {
     console.log('Ending turn');
     fetch('/end_turn', {
       method: 'POST',

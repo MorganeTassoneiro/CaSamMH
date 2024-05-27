@@ -19,7 +19,9 @@ app.post('/create_game', (req, res) => {
     players: {}, // Object to store player data
     turnOrder: [], // Array to store the order of players' turns
     currentPlayerIndex: 0, // Track the current player's index in the turn order
-    turnsTaken: {} // Track turns taken by each player in the current round
+    turnsTaken: {}, // Track turns taken by each player in the current round
+    eliminatedPlayers: {}, // Track eliminated players
+    playerLosses: {} // Track the number of monsters each player has lost
   };
   console.log(`Game created with ID: ${newGameId}`);
   res.json({ gameId: newGameId }); // Respond with the new game ID
@@ -35,6 +37,8 @@ app.post('/join_game', (req, res) => {
     };
     games[gameId].turnOrder.push(playerId); // Add the player to the turn order
     games[gameId].turnsTaken[playerId] = false; // Initialize turn taken to false for the player
+    games[gameId].eliminatedPlayers[playerId] = false; // Initialize player as not eliminated
+    games[gameId].playerLosses[playerId] = 0; // Initialize player loss count
     console.log(`Player ${playerId} joined game ${gameId}`);
     res.json({ success: true });
   } else {
@@ -204,19 +208,42 @@ function resolveConflict(game, x, y) {
   }
 }
 
-// Function to remove a specific type of monster from the board
+// Function to remove a specific type of monster from the board and track losses
 function removeMonster(game, x, y, type) {
   let index = game.board[x][y].findIndex(m => m.type === type); // Find the index of the monster to be removed
   if (index > -1) {
+    const playerId = game.board[x][y][index].player; // Get the player ID of the monster
     game.board[x][y].splice(index, 1); // Remove the monster from the board
-    console.log(`Removed ${type} from (${x}, ${y})`);
+    game.playerLosses[playerId]++; // Increment the player's loss count
+    console.log(`Removed ${type} from (${x}, ${y}) by player ${playerId}`);
+    if (game.playerLosses[playerId] >= 10) {
+      eliminatePlayer(game, playerId); // Eliminate the player if they have lost 10 monsters
+    }
   }
 }
 
-// Function to remove all monsters of a specific type from the board
+// Function to remove all monsters of a specific type from the board and track losses
 function removeAllOfType(game, x, y, type) {
-  game.board[x][y] = game.board[x][y].filter(m => m.type !== type); // Remove all monsters of the given type
-  console.log(`Removed all ${type}s from (${x}, ${y})`);
+  while (game.board[x][y].some(m => m.type === type)) {
+    removeMonster(game, x, y, type); // Remove each monster of the given type
+  }
+}
+
+// Function to eliminate a player
+function eliminatePlayer(game, playerId) {
+  game.eliminatedPlayers[playerId] = true; // Mark the player as eliminated
+  console.log(`Player ${playerId} has been eliminated`);
+  checkForWinner(game); // Check if there's a winner
+}
+
+// Function to check if there's a winner
+function checkForWinner(game) {
+  const remainingPlayers = Object.keys(game.eliminatedPlayers).filter(playerId => !game.eliminatedPlayers[playerId]);
+  if (remainingPlayers.length === 1) {
+    const winner = remainingPlayers[0];
+    console.log(`Player ${winner} wins the game!`);
+    // Handle game end and declare winner (e.g., send response to clients, update stats, etc.)
+  }
 }
 
 // Function to check if a player has no more moves left
@@ -237,7 +264,9 @@ function hasNoMovesLeft(game, playerId) {
 
 // Function to determine the next player
 function getNextPlayer(game) {
-  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length;
+  do {
+    game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length;
+  } while (game.eliminatedPlayers[game.turnOrder[game.currentPlayerIndex]]);
   return game.turnOrder[game.currentPlayerIndex];
 }
 
@@ -261,7 +290,7 @@ function checkEndRound(game) {
   } else {
     // Set the next player for the current round
     game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length;
-    while (game.turnsTaken[game.turnOrder[game.currentPlayerIndex]]) {
+    while (game.turnsTaken[game.turnOrder[game.currentPlayerIndex]] || game.eliminatedPlayers[game.turnOrder[game.currentPlayerIndex]]) {
       game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length;
     }
   }

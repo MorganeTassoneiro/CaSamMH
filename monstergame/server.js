@@ -1,5 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 const app = express();
 const port = 3000;
@@ -8,6 +9,9 @@ let games = {};
 let playerStats = {};
 
 app.use(express.json());
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Route to create a new game
 app.post('/create_game', (req, res) => {

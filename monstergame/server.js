@@ -145,24 +145,42 @@ function resolveConflict(game, x, y) {
   let monsters = game.board[x][y]; // Get the monsters at the given position
   if (Array.isArray(monsters) && monsters.length > 1) {
     let types = monsters.map(m => m.type); // Get the types of the monsters
+
+    // Handle conflicts based on monster types
     if (types.includes('vampire') && types.includes('werewolf')) {
       removeMonster(game, x, y, 'werewolf'); // Remove the werewolf if there's a vampire and a werewolf
-    } else if (types.includes('werewolf') && types.includes('ghost')) {
+    }
+    if (types.includes('werewolf') && types.includes('ghost')) {
       removeMonster(game, x, y, 'ghost'); // Remove the ghost if there's a werewolf and a ghost
-    } else if (types.includes('ghost') && types.includes('vampire')) {
+    }
+    if (types.includes('ghost') && types.includes('vampire')) {
       removeMonster(game, x, y, 'vampire'); // Remove the vampire if there's a ghost and a vampire
-    } else if (types[0] === types[1]) {
-      game.board[x][y] = null; // Remove both monsters if they are of the same type
+    }
+    if (types.filter(type => type === 'vampire').length > 1) {
+      removeAllOfType(game, x, y, 'vampire'); // Remove both vampires if there are two vampires
+    }
+    if (types.filter(type => type === 'werewolf').length > 1) {
+      removeAllOfType(game, x, y, 'werewolf'); // Remove both werewolves if there are two werewolves
+    }
+    if (types.filter(type => type === 'ghost').length > 1) {
+      removeAllOfType(game, x, y, 'ghost'); // Remove both ghosts if there are two ghosts
     }
   }
 }
 
-// Function to remove a monster from the board
+// Function to remove a specific type of monster from the board
 function removeMonster(game, x, y, type) {
   let index = game.board[x][y].findIndex(m => m.type === type); // Find the index of the monster to be removed
   if (index > -1) {
     game.board[x][y].splice(index, 1); // Remove the monster from the board
+    console.log(`Removed ${type} from (${x}, ${y})`);
   }
+}
+
+// Function to remove all monsters of a specific type from the board
+function removeAllOfType(game, x, y, type) {
+  game.board[x][y] = game.board[x][y].filter(m => m.type !== type); // Remove all monsters of the given type
+  console.log(`Removed all ${type}s from (${x}, ${y})`);
 }
 
 // Function to determine the next player based on the fewest monsters

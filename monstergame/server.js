@@ -38,6 +38,36 @@ app.post('/join_game', (req, res) => {
     }
   });
   
+  // Route to place a monster on the board
+app.post('/place_monster', (req, res) => {
+    const { gameId, playerId, monsterType, x, y } = req.body; // Extract data from the request body
+    let game = games[gameId]; // Get the game state
+    if (game && isValidPlacement(game, playerId, x, y)) {
+      game.board[x][y] = { type: monsterType, player: playerId }; // Place the monster on the board
+      game.players[playerId].monsters.push({ type: monsterType, x, y }); // Add the monster to the player's list of monsters
+      res.json({ success: true, game }); // Respond with the updated game state
+    } else {
+      res.json({ success: false, message: "Invalid placement" }); // Respond with an error if the placement is invalid
+    }
+  });
+  
+  // Route to move a monster on the board
+app.post('/move_monster', (req, res) => {
+    const { gameId, playerId, fromX, fromY, toX, toY } = req.body; // Extract data from the request body
+    let game = games[gameId]; // Get the game state
+    if (game && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
+      let monster = game.board[fromX][fromY]; // Get the monster to be moved
+      game.board[fromX][fromY] = null; // Remove the monster from its original position
+      game.board[toX][toY] = monster; // Place the monster at the new position
+      monster.x = toX; // Update the monster's coordinates
+      monster.y = toY;
+      resolveConflict(game, toX, toY); // Resolve any conflicts at the new position
+      res.json({ success: true, game }); // Respond with the updated game state
+    } else {
+      res.json({ success: false, message: "Invalid move" }); // Respond with an error if the move is invalid
+    }
+  });
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

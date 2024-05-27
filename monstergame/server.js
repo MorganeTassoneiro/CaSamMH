@@ -18,7 +18,7 @@ app.post('/create_game', (req, res) => {
     board: Array.from({ length: 10 }, () => Array(10).fill(null)), // Initialize a 10x10 game board
     players: {}, // Object to store player data
     turnOrder: [], // Array to store the order of players' turns
-    currentPlayer: null, // Track the current player
+    currentPlayerIndex: 0, // Track the current player's index in the turn order
     turnsTaken: {} // Track turns taken by each player in the current round
   };
   console.log(`Game created with ID: ${newGameId}`);
@@ -34,9 +34,6 @@ app.post('/join_game', (req, res) => {
       edge: determinePlayerEdge(Object.keys(games[gameId].players).length) // Determine the player's edge based on the number of players
     };
     games[gameId].turnOrder.push(playerId); // Add the player to the turn order
-    if (!games[gameId].currentPlayer) {
-      games[gameId].currentPlayer = playerId; // Set the current player if not already set
-    }
     games[gameId].turnsTaken[playerId] = false; // Initialize turn taken to false for the player
     console.log(`Player ${playerId} joined game ${gameId}`);
     res.json({ success: true });
@@ -51,12 +48,10 @@ app.post('/place_monster', (req, res) => {
   const { gameId, playerId, monsterType, x, y } = req.body; // Extract data from the request body
   let game = games[gameId]; // Get the game state
   console.log(`Player ${playerId} attempting to place ${monsterType} at (${x}, ${y}) in game ${gameId}`);
-  if (game && game.currentPlayer === playerId && isValidPlacement(game, playerId, x, y)) {
+  if (game && game.turnOrder[game.currentPlayerIndex] === playerId && isValidPlacement(game, playerId, x, y)) {
     game.board[x][y] = { type: monsterType, player: playerId }; // Place the monster on the board
     game.players[playerId].monsters.push({ type: monsterType, x, y }); // Add the monster to the player's list of monsters
     console.log(`Monster placed by ${playerId} at (${x}, ${y})`);
-    game.turnsTaken[playerId] = true; // Mark turn as taken
-    checkEndRound(game); // Check if the round should end
     res.json({ success: true, game });
   } else {
     console.log(`Invalid placement or not ${playerId}'s turn`);
@@ -69,7 +64,7 @@ app.post('/move_monster', (req, res) => {
   const { gameId, playerId, fromX, fromY, toX, toY } = req.body; // Extract data from the request body
   let game = games[gameId]; // Get the game state
   console.log(`Player ${playerId} attempting to move monster from (${fromX}, ${fromY}) to (${toX}, ${toY}) in game ${gameId}`);
-  if (game && game.currentPlayer === playerId && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
+  if (game && game.turnOrder[game.currentPlayerIndex] === playerId && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
     let monster = game.board[fromX][fromY]; // Get the monster to be moved
     game.board[fromX][fromY] = null; // Remove the monster from its original position
 
@@ -87,8 +82,6 @@ app.post('/move_monster', (req, res) => {
     monster.y = toY;
     resolveConflict(game, toX, toY); // Resolve any conflicts at the new position
     console.log(`Monster moved by ${playerId} from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
-    game.turnsTaken[playerId] = true; // Mark turn as taken
-    checkEndRound(game); // Check if the round should end
     res.json({ success: true, game });
   } else {
     console.log(`Invalid move or not ${playerId}'s turn`);
@@ -100,7 +93,7 @@ app.post('/move_monster', (req, res) => {
 app.post('/end_turn', (req, res) => {
   const { gameId, playerId } = req.body;
   let game = games[gameId];
-  if (game && game.currentPlayer === playerId) {
+  if (game && game.turnOrder[game.currentPlayerIndex] === playerId) {
     game.turnsTaken[playerId] = true; // Mark turn as taken
     console.log(`Player ${playerId} ended their turn in game ${gameId}`);
     checkEndRound(game); // Check if the round should end
@@ -114,7 +107,7 @@ app.post('/end_turn', (req, res) => {
 app.get('/check_end_turn', (req, res) => {
   const { gameId, playerId } = req.query;
   let game = games[gameId];
-  if (game && game.currentPlayer === playerId) {
+  if (game && game.turnOrder[game.currentPlayerIndex] === playerId) {
     if (hasNoMovesLeft(game, playerId)) {
       res.json({ endTurn: true });
     } else {
@@ -242,12 +235,10 @@ function hasNoMovesLeft(game, playerId) {
   return true;
 }
 
-// Function to determine the next player based on the fewest monsters
+// Function to determine the next player
 function getNextPlayer(game) {
-  let playerIds = Object.keys(game.players);
-  let minMonsters = Math.min(...playerIds.map(id => game.players[id].monsters.length));
-  let eligiblePlayers = playerIds.filter(id => game.players[id].monsters.length === minMonsters);
-  return eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
+  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length;
+  return game.turnOrder[game.currentPlayerIndex];
 }
 
 // Check if the turn should end automatically
@@ -265,12 +256,16 @@ function checkEndRound(game) {
     console.log(`All players have taken their turns. Ending round.`);
     // Reset turnsTaken for the next round
     Object.keys(game.turnsTaken).forEach(playerId => game.turnsTaken[playerId] = false);
-    // Set the next player for the new round
-    game.currentPlayer = getNextPlayer(game);
+    // Start the next round with the player with the fewest monsters
+    game.currentPlayerIndex = 0;
   } else {
     // Set the next player for the current round
-    game.currentPlayer = getNextPlayer(game);
+    game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length;
+    while (game.turnsTaken[game.turnOrder[game.currentPlayerIndex]]) {
+      game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length;
+    }
   }
+  game.currentPlayer = game.turnOrder[game.currentPlayerIndex];
 }
 
 // Start the server and listen on the defined port

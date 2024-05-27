@@ -69,7 +69,17 @@ app.post('/move_monster', (req, res) => {
   if (game && game.currentPlayer === playerId && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
     let monster = game.board[fromX][fromY]; // Get the monster to be moved
     game.board[fromX][fromY] = null; // Remove the monster from its original position
-    game.board[toX][toY] = monster; // Place the monster at the new position
+
+    // If the destination cell is not empty, it means a conflict needs to be resolved
+    if (game.board[toX][toY] !== null) {
+      if (!Array.isArray(game.board[toX][toY])) {
+        game.board[toX][toY] = [game.board[toX][toY]]; // Convert to array if not already an array
+      }
+      game.board[toX][toY].push(monster); // Add the moving monster to the destination cell
+    } else {
+      game.board[toX][toY] = monster; // Place the monster at the new position if the cell is empty
+    }
+
     monster.x = toX; // Update the monster's coordinates
     monster.y = toY;
     resolveConflict(game, toX, toY); // Resolve any conflicts at the new position
@@ -81,6 +91,7 @@ app.post('/move_monster', (req, res) => {
     res.json({ success: false, message: "Invalid move or not your turn" });
   }
 });
+
 
 // Function to determine the player's edge based on the number of players
 function determinePlayerEdge(playerIndex) {

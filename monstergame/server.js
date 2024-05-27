@@ -92,6 +92,33 @@ app.post('/move_monster', (req, res) => {
   }
 });
 
+// Route to end the player's turn
+app.post('/end_turn', (req, res) => {
+  const { gameId, playerId } = req.body;
+  let game = games[gameId];
+  if (game && game.currentPlayer === playerId) {
+    game.currentPlayer = getNextPlayer(game); // Set the next player
+    console.log(`Player ${playerId} ended their turn in game ${gameId}`);
+    res.json({ success: true });
+  } else {
+    res.json({ success: false, message: "Invalid request or not your turn" });
+  }
+});
+
+// Route to check if the turn should end automatically
+app.get('/check_end_turn', (req, res) => {
+  const { gameId, playerId } = req.query;
+  let game = games[gameId];
+  if (game && game.currentPlayer === playerId) {
+    if (hasNoMovesLeft(game, playerId)) {
+      res.json({ endTurn: true });
+    } else {
+      res.json({ endTurn: false });
+    }
+  } else {
+    res.json({ endTurn: false });
+  }
+});
 
 // Function to determine the player's edge based on the number of players
 function determinePlayerEdge(playerIndex) {
@@ -192,6 +219,22 @@ function removeMonster(game, x, y, type) {
 function removeAllOfType(game, x, y, type) {
   game.board[x][y] = game.board[x][y].filter(m => m.type !== type); // Remove all monsters of the given type
   console.log(`Removed all ${type}s from (${x}, ${y})`);
+}
+
+// Function to check if a player has no more moves left
+function hasNoMovesLeft(game, playerId) {
+  const playerMonsters = game.players[playerId].monsters;
+  for (let monster of playerMonsters) {
+    const { x, y } = monster;
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -2; dy <= 2; dy++) {
+        if (isValidMove(game, playerId, x, y, x + dx, y + dy)) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
 }
 
 // Function to determine the next player based on the fewest monsters

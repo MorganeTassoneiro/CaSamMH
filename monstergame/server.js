@@ -83,11 +83,14 @@ function determinePlayerEdge(playerIndex) {
 function isValidPlacement(game, playerId, x, y) {
   let playerEdge = game.players[playerId].edge; // Get the player's edge
   let isEdgeValid = false;
-  if (playerEdge === 'top' && x === 0) isEdgeValid = true;
-  if (playerEdge === 'right' && y === 9) isEdgeValid = true;
-  if (playerEdge === 'bottom' && x === 9) isEdgeValid = true;
-  if (playerEdge === 'left' && y === 0) isEdgeValid = true;
 
+  // Check if the placement is on the player's edge
+  if (playerEdge === 'top' && x === 0 && y >= 0 && y < 10) isEdgeValid = true; // Top edge
+  if (playerEdge === 'right' && y === 9 && x >= 0 && x < 10) isEdgeValid = true; // Right edge
+  if (playerEdge === 'bottom' && x === 9 && y >= 0 && y < 10) isEdgeValid = true; // Bottom edge
+  if (playerEdge === 'left' && y === 0 && x >= 0 && x < 10) isEdgeValid = true; // Left edge
+
+  // Ensure the placement is within the grid and the target cell is empty
   if (isEdgeValid && game.board[x][y] === null) {
     return true;
   }
@@ -97,8 +100,14 @@ function isValidPlacement(game, playerId, x, y) {
 // Function to validate if a monster move is valid
 function isValidMove(game, playerId, fromX, fromY, toX, toY) {
   // Check if the move is valid based on the movement rules
-  if (Math.abs(toX - fromX) <= 1 && Math.abs(toY - fromY) <= 1) {
-    return true;
+  if (Math.abs(toX - fromX) <= 2 && Math.abs(toY - fromY) <= 2 && 
+      (Math.abs(toX - fromX) === Math.abs(toY - fromY) || 
+      toX === fromX || 
+      toY === fromY)) {
+    // Ensure the destination is not occupied by another player's monster
+    if (game.board[toX][toY] === null || game.board[toX][toY].player === playerId) {
+      return true;
+    }
   }
   return false;
 }

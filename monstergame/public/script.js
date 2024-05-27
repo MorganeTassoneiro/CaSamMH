@@ -105,6 +105,36 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+   // Function to end the player's turn
+   function endTurn() {
+    console.log('Ending turn');
+    fetch('/end_turn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, playerId }) // Send request to end the turn
+    }).then(response => response.json()).then(data => {
+      if (data.success) {
+        console.log('Turn ended');
+      } else {
+        alert(data.message); // Show an error message if ending the turn fails
+      }
+    });
+  }
+
+  // Make endTurn function available globally
+  window.endTurn = endTurn;
+
+  // Function to check if the turn should end automatically
+  function checkEndTurn() {
+    fetch(`/check_end_turn?gameId=${gameId}&playerId=${playerId}`, {
+      method: 'GET'
+    }).then(response => response.json()).then(data => {
+      if (data.endTurn) {
+        console.log('No more moves left. Ending turn automatically.');
+        endTurn(); // End the turn automatically if there are no moves left
+      }
+    });
+  }
 
   // Function to update the board with the current game state
   function updateBoard(board) {

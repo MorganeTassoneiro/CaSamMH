@@ -72,6 +72,15 @@ function determinePlayerEdge(playerIndex) {
   const edges = ['top', 'right', 'bottom', 'left']; // Define the edges
   return edges[playerIndex % edges.length]; // Return the corresponding edge for the player
 }
+// Function to validate if a monster placement is valid
+function isValidPlacement(game, playerId, x, y) {
+  let playerEdge = game.players[playerId].edge; // Get the player's edge
+  if (playerEdge === 'top' && x === 0) return true; // Validate placement based on the player's edge
+  if (playerEdge === 'right' && y === 9) return true;
+  if (playerEdge === 'bottom' && x === 9) return true;
+  if (playerEdge === 'left' && y === 0) return true;
+  return false;
+}
 
 // Start the server
 app.listen(port, () => {

@@ -1,6 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
   const board = document.getElementById('game-board'); // Get the game board element
   let gameId, playerId;
+  let selectedMonsterType = 'vampire'; // Default to vampire
+
+  // Function to select the monster type
+  function selectMonsterType(type) {
+    selectedMonsterType = type;
+    console.log(`Selected monster type: ${selectedMonsterType}`);
+  }
+
+  // Make selectMonsterType function available globally
+  window.selectMonsterType = selectMonsterType;
 
   // Function to create a game
   function createGame() {
@@ -55,11 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Function to place a monster
   function placeMonster(x, y) {
-    console.log(`Placing monster at (${x}, ${y})`);
+    console.log(`Placing ${selectedMonsterType} at (${x}, ${y})`);
     fetch('/place_monster', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameId, playerId, monsterType: 'vampire', x, y }) // Send request to place a vampire at the specified coordinates
+      body: JSON.stringify({ gameId, playerId, monsterType: selectedMonsterType, x, y }) // Send request to place the selected monster type at the specified coordinates
     }).then(response => response.json()).then(data => {
       if (data.success) {
         updateBoard(data.game.board); // Update the board if placement is successful

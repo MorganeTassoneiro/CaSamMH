@@ -1,15 +1,27 @@
 const express = require('express'); // Import Express framework
 const { v4: uuidv4 } = require('uuid'); // Import UUID library to generate unique IDs
 const path = require('path'); // Import path module for handling file paths
+const http = require('http');
+const socketIo = require('socket.io');
 
 const app = express(); // Create an instance of Express
+const server = http.createServer(app); // Create an HTTP server
+const io = socketIo(server); // Attach socket.io to the server
 const port = 3000; // Define the port on which the server will run
 
 let games = {}; // Object to store game states
-let playerStats = {}; // Object to store player statistics
+let totalGamesPlayed = 0; // Track the total number of games played
+let playerWinStats = {}; // Track the number of games won and lost by each player
 
 app.use(express.json()); // Middleware to parse JSON request bodies
 app.use(express.static(path.join(__dirname, 'public'))); // Middleware to serve static files from the 'public' directory
+
+// Initialize player statistics if they don't exist
+function initializePlayerStats(playerId) {
+  if (!playerWinStats[playerId]) {
+    playerWinStats[playerId] = { wins: 0, losses: 0 };
+  }
+}
 
 // Route to create a new game
 app.post('/create_game', (req, res) => {
@@ -23,8 +35,9 @@ app.post('/create_game', (req, res) => {
     eliminatedPlayers: {}, // Track eliminated players
     playerLosses: {} // Track the number of monsters each player has lost
   };
-  console.log(`Game created with ID: ${newGameId}`);
-  res.json({ gameId: newGameId }); // Respond with the new game ID
+  totalGamesPlayed++; // Increment the total number of games played
+  console.log(`Game created with ID: ${newGameId}. Total games played: ${totalGamesPlayed}`);
+  res.json({ gameId: newGameId, totalGamesPlayed }); // Respond with the new game ID and total games played
 });
 
 // Route for a player to join a game
@@ -120,6 +133,11 @@ app.get('/check_end_turn', (req, res) => {
   } else {
     res.json({ endTurn: false });
   }
+});
+
+// Route to get game statistics
+app.get('/game_stats', (req, res) => {
+  res.json({ totalGamesPlayed, playerWinStats });
 });
 
 // Function to determine the player's edge based on the number of players
@@ -242,7 +260,20 @@ function checkForWinner(game) {
   if (remainingPlayers.length === 1) {
     const winner = remainingPlayers[0];
     console.log(`Player ${winner} wins the game!`);
-    // Handle game end and declare winner (e.g., send response to clients, update stats, etc.)
+
+    // Update player statistics
+    initializePlayerStats(winner);
+    playerWinStats[winner].wins++;
+
+    Object.keys(game.players).forEach(playerId => {
+      if (playerId !== winner) {
+        initializePlayerStats(playerId);
+        playerWinStats[playerId].losses++;
+      }
+    });
+
+    // Emit game over event
+    io.emit('game_over', { winner, playerWinStats, totalGamesPlayed });
   }
 }
 
@@ -298,6 +329,6 @@ function checkEndRound(game) {
 }
 
 // Start the server and listen on the defined port
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });

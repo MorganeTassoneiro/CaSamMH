@@ -52,8 +52,8 @@ app.post('/place_monster', (req, res) => {
   if (game && game.currentPlayer === playerId && isValidPlacement(game, playerId, x, y)) {
     game.board[x][y] = { type: monsterType, player: playerId }; // Place the monster on the board
     game.players[playerId].monsters.push({ type: monsterType, x, y }); // Add the monster to the player's list of monsters
-    game.currentPlayer = getNextPlayer(game); // Determine the next player
     console.log(`Monster placed by ${playerId} at (${x}, ${y})`);
+    checkEndTurn(game, playerId);
     res.json({ success: true, game });
   } else {
     console.log(`Invalid placement or not ${playerId}'s turn`);
@@ -83,8 +83,8 @@ app.post('/move_monster', (req, res) => {
     monster.x = toX; // Update the monster's coordinates
     monster.y = toY;
     resolveConflict(game, toX, toY); // Resolve any conflicts at the new position
-    game.currentPlayer = getNextPlayer(game); // Determine the next player
     console.log(`Monster moved by ${playerId} from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
+    checkEndTurn(game, playerId);
     res.json({ success: true, game });
   } else {
     console.log(`Invalid move or not ${playerId}'s turn`);
@@ -243,6 +243,14 @@ function getNextPlayer(game) {
   let minMonsters = Math.min(...playerIds.map(id => game.players[id].monsters.length));
   let eligiblePlayers = playerIds.filter(id => game.players[id].monsters.length === minMonsters);
   return eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
+}
+
+// Check if the turn should end automatically
+function checkEndTurn(game, playerId) {
+  if (hasNoMovesLeft(game, playerId)) {
+    console.log(`Player ${playerId} has no more moves. Ending turn automatically.`);
+    game.currentPlayer = getNextPlayer(game);
+  }
 }
 
 // Start the server and listen on the defined port

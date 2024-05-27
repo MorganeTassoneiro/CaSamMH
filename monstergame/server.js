@@ -67,6 +67,11 @@ app.post('/move_monster', (req, res) => {
       res.json({ success: false, message: "Invalid move" }); // Respond with an error if the move is invalid
     }
   });
+  // Function to determine the player's edge based on the number of players
+function determinePlayerEdge(playerIndex) {
+  const edges = ['top', 'right', 'bottom', 'left']; // Define the edges
+  return edges[playerIndex % edges.length]; // Return the corresponding edge for the player
+}
 
 // Start the server
 app.listen(port, () => {

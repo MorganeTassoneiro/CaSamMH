@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const board = document.getElementById('game-board'); // Get the game board element
   let gameId, playerId;
   let selectedMonsterType = 'vampire'; // Default to vampire
+  let selectedMonster = null; // To store the coordinates of the selected monster
 
   // Function to select the monster type
   function selectMonsterType(type) {
@@ -44,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cell = document.createElement('td'); // Create a cell
         cell.dataset.x = i; // Set cell coordinates
         cell.dataset.y = j;
-        cell.addEventListener('click', placeOrMoveMonster); // Add click event listener for placing or moving a monster
+        cell.addEventListener('click', handleCellClick); // Add click event listener for placing or moving a monster
         row.appendChild(cell); // Append cell to the row
       }
       board.appendChild(row); // Append row to the board
@@ -52,14 +53,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Function to handle placing or moving a monster
-  function placeOrMoveMonster(event) {
+  function handleCellClick(event) {
     const x = parseInt(event.target.dataset.x, 10);
     const y = parseInt(event.target.dataset.y, 10);
-    console.log(`Attempting to place or move monster at (${x}, ${y})`);
-    if (event.target.textContent === '') {
-      placeMonster(x, y); // Place a monster if the cell is empty
+    if (selectedMonster) {
+      moveMonster(selectedMonster.x, selectedMonster.y, x, y); // Move the selected monster
     } else {
-      moveMonster(x, y); // Move a monster if the cell is not empty
+      if (event.target.textContent === '') {
+        placeMonster(x, y); // Place a monster if the cell is empty
+      } else {
+        selectMonster(x, y); // Select a monster for movement
+      }
     }
   }
 
@@ -78,9 +82,28 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-   // Function to move a monster (NEXT TO IMPLEMET)
-  function moveMonster(x, y) {
-    // Logic to move a monster
+
+  // select a monster for movement
+  function selectMonster(x, y) {
+    console.log(`Selected monster at (${x}, ${y}) for movement`);
+    selectedMonster = { x, y };
+  }
+
+  // Function to move a monster
+  function moveMonster(fromX, fromY, toX, toY) {
+    console.log(`Moving monster from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
+    fetch('/move_monster', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, playerId, fromX, fromY, toX, toY }) // Send request to move the monster
+    }).then(response => response.json()).then(data => {
+      if (data.success) {
+        updateBoard(data.game.board); // Update the board if move is successful
+        selectedMonster = null; // Clear the selected monster
+      } else {
+        alert(data.message); // Show an error message if move is invalid
+      }
+    });
   }
 
   // Function to update the board with the current game state

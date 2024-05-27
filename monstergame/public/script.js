@@ -12,6 +12,18 @@ document.addEventListener('DOMContentLoaded', () => {
       joinGame(gameId);
     });
   }
+  // Function to join a game
+  function joinGame(gameId) {
+    fetch('/join_game', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId: gameId, playerId: 'player1' })
+    }).then(response => response.json()).then(data => {
+      console.log('Joined game:', data);
+      playerId = 'player1'; // Store the playerId for future requests
+      initializeBoard();
+    });
+  }
 
      // Initialize the board with 10x10 grid
       for (let i = 0; i < 10; i++) {

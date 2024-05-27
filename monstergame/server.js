@@ -81,6 +81,14 @@ function isValidPlacement(game, playerId, x, y) {
   if (playerEdge === 'left' && y === 0) return true;
   return false;
 }
+// Function to validate if a monster move is valid
+function isValidMove(game, playerId, fromX, fromY, toX, toY) {
+  // Check if the move is valid based on the movement rules
+  if (Math.abs(toX - fromX) <= 1 && Math.abs(toY - fromY) <= 1) {
+    return true;
+  }
+  return false;
+}
 
 // Start the server
 app.listen(port, () => {

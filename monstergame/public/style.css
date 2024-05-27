@@ -1,18 +1,30 @@
 body {
-  font-family: Arial, sans-serif;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  margin: 0;
+  margin: 5;
+  background: url('monsters.png') no-repeat center center fixed; /* Set background image */
+  background-size: cover; /* Ensure the image covers the entire background */
 }
 
 h1 {
   font-family: 'Creepster', cursive; /* Use a monster-style font */
-  color: #7a00cc; /* Dark purple color */
-  text-shadow: 2px 2px #d4a1ff; /* Light purple shadow */
-  margin-bottom: 20px;
+  color: #089b3e; /* Dark purple color */
+  text-shadow: 3px 3px #72be8e; /* Light purple shadow */
+  font-size: 55px; /* Make the title bigger */
+  margin-bottom: 0;
+}
+
+#stats {
+  font-family: 'Creepster', cursive; /* Use a monster-style font */
+  color: black; /* Make the statistics text black */
+  text-align: center;
+  text-shadow: 2px 2px #ffffff; /* Add shadow to the statistics text */
+  margin: 0; /* Remove top margin to minimize space */
+  padding: 0; /* Remove padding to minimize space */
 }
 
 #game-container {
@@ -22,32 +34,62 @@ h1 {
 }
 
 #game-board {
+  
   border-collapse: collapse;
+  border: 2px solid #089b3e; /* Dark green border */
+  background: linear-gradient(to right, #cfedd7, #72be8e); /* Gradient background for the melting effect */
+  margin-top: 20px; /* Add some space between the controls and the game board */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* shadow for a 3D effect */
 }
 
 #game-board td {
-  width: 30px;
-  height: 30px;
+  font-family: 'Creepster', cursive;
+  width: 25px; /*Size*/
+  height:25px; 
   text-align: center;
   vertical-align: middle;
   border: 1px solid black;
+  font-size: 10px; /* font size for monster text */
+  color: #080102; /* monster text color  */
+
 }
 
+
 button {
-  background-color: #7a00cc; /* Dark purple background */
+  background-color: #089b3e; /* Purple background */
+  font-family: 'Creepster';
   color: white;
   border: none;
   padding: 10px 20px;
   margin: 5px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 13px;
   transition: background-color 0.3s;
 }
 
 button:hover {
-  background-color: #d4a1ff; /* Light purple on hover */
+  background-color: #033b12; /* green on hover */
 }
 
 #stats {
-  margin-top: 20px;
+  margin-top: 10px;
+}
+#end-turn-container {
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+#end-turn-container button {
+  background-color: #cf1f2a; /* White background */
+  color: #f7f6f8; /* Purple text */
+  font-family: 'Creepster';
+  padding: 10px 20px;
+  margin: 5px;
+  cursor: pointer;
+  font-size: 16px; /* Adjust button font size */
+  transition: background-color 0.3s;
+}
+
+#end-turn-container button:hover {
+  background-color: #4c0505; /* Light gray background on hover */
 }

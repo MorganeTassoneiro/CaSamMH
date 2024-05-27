@@ -4,19 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Monster Mayhem</title>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>Monster Mayhem</h1>
-  <div id="controls">
-    <button onclick="selectMonsterType('vampire')">Vampire</button>
-    <button onclick="selectMonsterType('werewolf')">Werewolf</button>
-    <button onclick="selectMonsterType('ghost')">Ghost</button>
-    <button onclick="endTurn()">End Turn</button> <!-- Button to end the turn -->
-  </div>
   <div id="stats"></div> <!-- Section to display game statistics -->
+  <div id="controls">
+    <button onclick="selectMonsterType('vampire')">VAMPIRE</button>
+    <button onclick="selectMonsterType('werewolf')">WEREWOLF</button>
+    <button onclick="selectMonsterType('ghost')">GHOST</button>
+  </div>
   <div id="game-container">
     <table id="game-board"></table>
+  </div>
+  <div id="end-turn-container">
+    <button onclick="endTurn()">End Turn</button> <!-- Button to end the turn -->
   </div>
   <script src="script.js"></script>
 </body>

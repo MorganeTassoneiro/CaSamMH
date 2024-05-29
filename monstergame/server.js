@@ -146,22 +146,28 @@ function determinePlayerEdge(playerIndex) {
   return edges[playerIndex % edges.length]; // Return the corresponding edge for the player
 }
 
-// Function to validate if a monster placement is valid
+// Validate if the monster placement is valid
 function isValidPlacement(game, playerId, x, y) {
-  let playerEdge = game.players[playerId].edge; // Get the player's edge
+  let playerEdge = game.players[playerId].edge;
   let isEdgeValid = false;
 
   // Check if the placement is on the player's edge
-  if (playerEdge === 'top' && x === 0 && y >= 0 && y < 10) isEdgeValid = true; // Top edge
-  if (playerEdge === 'right' && y === 9 && x >= 0 && x < 10) isEdgeValid = true; // Right edge
-  if (playerEdge === 'bottom' && x === 9 && y >= 0 && y < 10) isEdgeValid = true; // Bottom edge
-  if (playerEdge === 'left' && y === 0 && x >= 0 && x < 10) isEdgeValid = true; // Left edge
+  if (playerEdge === 'top' && x === 0 && y >= 0 && y < 10) isEdgeValid = true;
+  if (playerEdge === 'right' && y === 9 && x >= 0 && x < 10) isEdgeValid = true;
+  if (playerEdge === 'bottom' && x === 9 && y >= 0 && y < 10) isEdgeValid = true;
+  if (playerEdge === 'left' && y === 0 && x >= 0 && x < 10) isEdgeValid = true;
 
   // Ensure the placement is within the grid and the target cell is empty
   if (isEdgeValid && game.board[x][y] === null) {
     return true;
   }
   return false;
+}
+
+// Determine the player's edge based on the number of players
+function determinePlayerEdge(playerIndex) {
+  const edges = ['top', 'right', 'bottom', 'left'];
+  return edges[playerIndex % edges.length];
 }
 
 // Function to validate if a monster move is valid

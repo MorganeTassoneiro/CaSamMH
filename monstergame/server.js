@@ -60,15 +60,17 @@ app.post('/join_game', (req, res) => {
   }
 });
 
-// Route to place a monster on the board
-app.post('/place_monster', (req, res) => {
+// Endpoint to place a monster on the board
+app.post('/place_monster', async (req, res) => {
   const { gameId, playerId, monsterType, x, y } = req.body; // Extract data from the request body
-  let game = games[gameId]; // Get the game state
+  let game = games[gameId];
   console.log(`Player ${playerId} attempting to place ${monsterType} at (${x}, ${y}) in game ${gameId}`);
+
   if (game && game.turnOrder[game.currentPlayerIndex] === playerId && isValidPlacement(game, playerId, x, y)) {
-    game.board[x][y] = { type: monsterType, player: playerId }; // Place the monster on the board
-    game.players[playerId].monsters.push({ type: monsterType, x, y }); // Add the monster to the player's list of monsters
+    // Ensure atomic placement
+    await placeMonster(game, playerId, monsterType, x, y);
     console.log(`Monster placed by ${playerId} at (${x}, ${y})`);
+    io.to(gameId).emit('update_board', game.board); // Emit board update to all clients in the game
     res.json({ success: true, game });
   } else {
     console.log(`Invalid placement or not ${playerId}'s turn`);
@@ -76,29 +78,17 @@ app.post('/place_monster', (req, res) => {
   }
 });
 
-// Route to move a monster on the board
-app.post('/move_monster', (req, res) => {
+// Endpoint to move a monster on the board
+app.post('/move_monster', async (req, res) => {
   const { gameId, playerId, fromX, fromY, toX, toY } = req.body; // Extract data from the request body
-  let game = games[gameId]; // Get the game state
+  let game = games[gameId];
   console.log(`Player ${playerId} attempting to move monster from (${fromX}, ${fromY}) to (${toX}, ${toY}) in game ${gameId}`);
+
   if (game && game.turnOrder[game.currentPlayerIndex] === playerId && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
-    let monster = game.board[fromX][fromY]; // Get the monster to be moved
-    game.board[fromX][fromY] = null; // Remove the monster from its original position
-
-    // If the destination cell is not empty, it means a conflict needs to be resolved
-    if (game.board[toX][toY] !== null) {
-      if (!Array.isArray(game.board[toX][toY])) {
-        game.board[toX][toY] = [game.board[toX][toY]]; // Convert to array if not already an array
-      }
-      game.board[toX][toY].push(monster); // Add the moving monster to the destination cell
-    } else {
-      game.board[toX][toY] = monster; // Place the monster at the new position if the cell is empty
-    }
-
-    monster.x = toX; // Update the monster's coordinates
-    monster.y = toY;
-    resolveConflict(game, toX, toY); // Resolve any conflicts at the new position
+    // Ensure atomic move
+    await moveMonster(game, playerId, fromX, fromY, toX, toY);
     console.log(`Monster moved by ${playerId} from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
+    io.to(gameId).emit('update_board', game.board); // Emit board update to all clients in the game
     res.json({ success: true, game });
   } else {
     console.log(`Invalid move or not ${playerId}'s turn`);
@@ -106,23 +96,24 @@ app.post('/move_monster', (req, res) => {
   }
 });
 
-// Route to end the player's turn
+// Endpoint to end the player's turn
 app.post('/end_turn', (req, res) => {
-  const { gameId, playerId } = req.body;
+  const { gameId, playerId } = req.body; // Extract data from the request body
   let game = games[gameId];
   if (game && game.turnOrder[game.currentPlayerIndex] === playerId) {
-    game.turnsTaken[playerId] = true; // Mark turn as taken
+    game.turnsTaken[playerId] = true; // Mark the player's turn as taken
     console.log(`Player ${playerId} ended their turn in game ${gameId}`);
     checkEndRound(game); // Check if the round should end
+    io.to(gameId).emit('update_turn', { currentPlayer: game.turnOrder[game.currentPlayerIndex] }); // Emit turn update to all clients in the game
     res.json({ success: true });
   } else {
     res.json({ success: false, message: "Invalid request or not your turn" });
   }
 });
 
-// Route to check if the turn should end automatically
+// Endpoint to check if the player's turn should end automatically
 app.get('/check_end_turn', (req, res) => {
-  const { gameId, playerId } = req.query;
+  const { gameId, playerId } = req.query; // Extract data from the query parameters
   let game = games[gameId];
   if (game && game.turnOrder[game.currentPlayerIndex] === playerId) {
     if (hasNoMovesLeft(game, playerId)) {
@@ -164,15 +155,8 @@ function isValidPlacement(game, playerId, x, y) {
   return false;
 }
 
-// Determine the player's edge based on the number of players
-function determinePlayerEdge(playerIndex) {
-  const edges = ['top', 'right', 'bottom', 'left'];
-  return edges[playerIndex % edges.length];
-}
-
-// Function to validate if a monster move is valid
+// Validate if the monster move is valid
 function isValidMove(game, playerId, fromX, fromY, toX, toY) {
-  // Ensure the move is within the board limits
   if (toX < 0 || toX >= 10 || toY < 0 || toY >= 10) {
     return false;
   }
@@ -204,6 +188,31 @@ function isBlocked(game, fromX, fromY, toX, toY) {
   return false;
 }
 
+// Place a monster on the board
+async function placeMonster(game, playerId, monsterType, x, y) {
+  game.board[x][y] = { type: monsterType, player: playerId };
+  game.players[playerId].monsters.push({ type: monsterType, x, y });
+}
+
+// Move a monster on the board
+async function moveMonster(game, playerId, fromX, fromY, toX, toY) {
+  let monster = game.board[fromX][fromY];
+  game.board[fromX][fromY] = null;
+
+  if (game.board[toX][toY] !== null) {
+    if (!Array.isArray(game.board[toX][toY])) {
+      game.board[toX][toY] = [game.board[toX][toY]];
+    }
+    game.board[toX][toY].push(monster);
+  } else {
+    game.board[toX][toY] = monster;
+  }
+
+  monster.x = toX;
+  monster.y = toY;
+  resolveConflict(game, toX, toY);
+}
+
 // Function to resolve conflicts when monsters end up on the same square
 function resolveConflict(game, x, y) {
   let monsters = game.board[x][y]; // Get the monsters at the given position
@@ -212,29 +221,29 @@ function resolveConflict(game, x, y) {
     let types = monsters.map(m => m.type); // Get the types of the monsters
     let remainingMonster = null; // To store the monster that will remain
 
-    // Handle conflicts based on monster types
-    if (types.includes('vampire') && types.includes('werewolf')) {
-      remainingMonster = monsters.find(m => m.type === 'vampire');
-      removeMonster(game, x, y, 'werewolf'); // Remove the werewolf if there's a vampire and a werewolf
-    } else if (types.includes('werewolf') && types.includes('ghost')) {
-      remainingMonster = monsters.find(m => m.type === 'werewolf');
-      removeMonster(game, x, y, 'ghost'); // Remove the ghost if there's a werewolf and a ghost
-    } else if (types.includes('ghost') && types.includes('vampire')) {
-      remainingMonster = monsters.find(m => m.type === 'ghost');
-      removeMonster(game, x, y, 'vampire'); // Remove the vampire if there's a ghost and a vampire
-    } else if (types.filter(type => type === 'vampire').length > 1) {
-      removeAllOfType(game, x, y, 'vampire'); // Remove both vampires if there are two vampires
-    } else if (types.filter(type => type === 'werewolf').length > 1) {
-      removeAllOfType(game, x, y, 'werewolf'); // Remove both werewolves if there are two werewolves
-    } else if (types.filter(type => type === 'ghost').length > 1) {
-      removeAllOfType(game, x, y, 'ghost'); // Remove both ghosts if there are two ghosts
-    }
-
-    // After resolving the conflict, ensure only one monster remains
-    if (remainingMonster) {
-      game.board[x][y] = remainingMonster;
-    }
+   // Handle conflicts based on monster types
+   if (types.includes('vampire') && types.includes('werewolf')) {
+    remainingMonster = monsters.find(m => m.type === 'vampire');
+    removeMonster(game, x, y, 'werewolf'); // Remove the werewolf if there's a vampire and a werewolf
+  } else if (types.includes('werewolf') && types.includes('ghost')) {
+    remainingMonster = monsters.find(m => m.type === 'werewolf');
+    removeMonster(game, x, y, 'ghost'); // Remove the ghost if there's a werewolf and a ghost
+  } else if (types.includes('ghost') && types.includes('vampire')) {
+    remainingMonster = monsters.find(m => m.type === 'ghost');
+    removeMonster(game, x, y, 'vampire'); // Remove the vampire if there's a ghost and a vampire
+  } else if (types.filter(type => type === 'vampire').length > 1) {
+    removeAllOfType(game, x, y, 'vampire'); // Remove both vampires if there are two vampires
+  } else if (types.filter(type => type === 'werewolf').length > 1) {
+    removeAllOfType(game, x, y, 'werewolf'); // Remove both werewolves if there are two werewolves
+  } else if (types.filter(type => type === 'ghost').length > 1) {
+    removeAllOfType(game, x, y, 'ghost'); // Remove both ghosts if there are two ghosts
   }
+
+  // After resolving the conflict, ensure only one monster remains
+  if (remainingMonster) {
+    game.board[x][y] = remainingMonster;
+  }
+}
 }
 
 // Function to remove a specific type of monster from the board and track losses
@@ -337,6 +346,7 @@ function checkEndRound(game) {
     }
   }
   game.currentPlayer = game.turnOrder[game.currentPlayerIndex];
+  io.to(game.id).emit('update_turn', { currentPlayer: game.currentPlayer });
 }
 
 // Start the server and listen on the defined port

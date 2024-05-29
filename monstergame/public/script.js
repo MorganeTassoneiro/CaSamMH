@@ -45,21 +45,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(response => response.json()).then(data => {
       console.log('Game created:', data);
       gameId = data.gameId; // Store the gameId for future requests
-      joinGame(gameId);
+      joinGame(gameId, `player${Math.floor(Math.random() * 4)}`); // Generate a random player ID
       fetchGameStats(); // Fetch and display updated game statistics
     });
   }
 
   // Function to join a game
-  function joinGame(gameId) {
+  function joinGame(gameId, player) {
     fetch('/join_game', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameId: gameId, playerId: 'player1' }) // Update to handle multiple players if necessary
+      body: JSON.stringify({ gameId, playerId: player })
     }).then(response => response.json()).then(data => {
-      console.log('Joined game:', data);
-      playerId = 'player1'; // Store the playerId for future requests
-      initializeBoard();
+      if (data.success) {
+        console.log('Joined game:', data);
+        playerId = player;
+        initializeBoard();
+      } else {
+        console.error('Failed to join game:', data.message);
+      }
     });
   }
 

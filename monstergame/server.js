@@ -44,9 +44,13 @@ app.post('/create_game', (req, res) => {
 app.post('/join_game', (req, res) => {
   const { gameId, playerId } = req.body; // Extract gameId and playerId from the request body
   if (games[gameId]) {
+    const playerCount = Object.keys(games[gameId].players).length;
+    if (playerCount >= 4) {
+      return res.json({ success: false, message: 'Game is full' });
+    }
     games[gameId].players[playerId] = {
       monsters: [], // Array to store the player's monsters
-      edge: determinePlayerEdge(Object.keys(games[gameId].players).length) // Determine the player's edge based on the number of players
+      edge: determinePlayerEdge(playerCount) // Determine the player's edge based on the number of players
     };
     games[gameId].turnOrder.push(playerId); // Add the player to the turn order
     games[gameId].turnsTaken[playerId] = false; // Initialize turn taken to false for the player
@@ -221,29 +225,28 @@ function resolveConflict(game, x, y) {
     let types = monsters.map(m => m.type); // Get the types of the monsters
     let remainingMonster = null; // To store the monster that will remain
 
-   // Handle conflicts based on monster types
-   if (types.includes('vampire') && types.includes('werewolf')) {
-    remainingMonster = monsters.find(m => m.type === 'vampire');
-    removeMonster(game, x, y, 'werewolf'); // Remove the werewolf if there's a vampire and a werewolf
-  } else if (types.includes('werewolf') && types.includes('ghost')) {
-    remainingMonster = monsters.find(m => m.type === 'werewolf');
-    removeMonster(game, x, y, 'ghost'); // Remove the ghost if there's a werewolf and a ghost
-  } else if (types.includes('ghost') && types.includes('vampire')) {
-    remainingMonster = monsters.find(m => m.type === 'ghost');
-    removeMonster(game, x, y, 'vampire'); // Remove the vampire if there's a ghost and a vampire
-  } else if (types.filter(type => type === 'vampire').length > 1) {
-    removeAllOfType(game, x, y, 'vampire'); // Remove both vampires if there are two vampires
-  } else if (types.filter(type => type === 'werewolf').length > 1) {
-    removeAllOfType(game, x, y, 'werewolf'); // Remove both werewolves if there are two werewolves
-  } else if (types.filter(type => type === 'ghost').length > 1) {
-    removeAllOfType(game, x, y, 'ghost'); // Remove both ghosts if there are two ghosts
+    // Handle conflicts based on monster types
+    if (types.includes('vampire') && types.includes('werewolf')) {
+      remainingMonster = monsters.find(m => m.type === 'vampire');
+      removeMonster(game, x, y, 'werewolf'); // Remove the werewolf if there's a vampire and a werewolf
+    } else if (types.includes('werewolf') && types.includes('ghost')) {
+      remainingMonster = monsters.find(m => m.type === 'werewolf');
+      removeMonster(game, x, y, 'ghost'); // Remove the ghost if there's a werewolf and a ghost
+    } else if (types.includes('ghost') && types.includes('vampire')) {
+      remainingMonster = monsters.find(m => m.type === 'ghost');
+      removeMonster(game, x, y, 'vampire'); // Remove the vampire if there's a ghost and a vampire
+    } else if (types.filter(type => type === 'vampire').length > 1) {
+      removeAllOfType(game, x, y, 'vampire'); // Remove both vampires if there are two vampires
+    } else if (types.filter(type => type === 'werewolf').length > 1) {
+      removeAllOfType(game, x, y, 'werewolf'); // Remove both werewolves if there are two werewolves
+    } else if (types.filter(type => type === 'ghost').length > 1) {
+      removeAllOfType(game, x, y, 'ghost'); // Remove both ghosts if there are two ghosts
+    }
+      // After resolving the conflict, ensure only one monster remains
+    if (remainingMonster) {
+      game.board[x][y] = remainingMonster;
+    }
   }
-
-  // After resolving the conflict, ensure only one monster remains
-  if (remainingMonster) {
-    game.board[x][y] = remainingMonster;
-  }
-}
 }
 
 // Function to remove a specific type of monster from the board and track losses

@@ -18,9 +18,11 @@
   <div id="game-container">
     <table id="game-board"></table>
   </div>
+  <div id="turn-display">Current turn: <span id="current-player"></span></div> <!-- Display the current turn -->
   <div id="end-turn-container">
     <button onclick="endTurn()">End Turn</button> <!-- Button to end the turn -->
   </div>
+  <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

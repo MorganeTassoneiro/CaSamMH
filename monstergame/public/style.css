@@ -93,3 +93,10 @@ button:hover {
 #end-turn-container button:hover {
   background-color: #4c0505; /* Light gray background on hover */
 }
+#turn-display {
+  margin-top: 20px;
+  font-family: 'Creepster', cursive;
+  font-size: 24px;
+  color: #089b3e;
+  text-shadow: 2px 2px #72be8e;
+}

@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedMonsterType = 'vampire'; // Default to vampire
   let selectedMonster = null; // To store the coordinates of the selected monster
 
+  const socket = io(); // Initialize Socket.io
+
   // Function to fetch and display game statistics
   function fetchGameStats() {
     fetch('/game_stats')
@@ -53,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('/join_game', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameId: gameId, playerId: 'player1' })
+      body: JSON.stringify({ gameId: gameId, playerId: 'player1' }) // Update to handle multiple players if necessary
     }).then(response => response.json()).then(data => {
       console.log('Joined game:', data);
       playerId = 'player1'; // Store the playerId for future requests
@@ -169,10 +171,19 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < 10; i++) {
       for (let j = 0; j < 10; j++) {
         const cell = document.querySelector(`td[data-x="${i}"][data-y="${j}"]`);
+        cell.className = ''; // Clear previous classes
+        cell.textContent = ''; // Clear previous content
         if (board[i][j]) {
-          cell.textContent = board[i][j].type; // Display the monster type in the cell
-        } else {
-          cell.textContent = ''; // Clear the cell if there's no monster
+          const monster = board[i][j];
+          if (Array.isArray(monster)) {
+            monster.forEach(m => {
+              cell.classList.add(m.type); // Add the monster type as a class
+              cell.textContent += m.type.charAt(0).toUpperCase(); // Set the cell content to the first letter of the monster type
+            });
+          } else {
+            cell.classList.add(monster.type); // Add the monster type as a class
+            cell.textContent = monster.type.charAt(0).toUpperCase(); // Set the cell content to the first letter of the monster type
+          }
         }
       }
     }
@@ -189,6 +200,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
   }
+
+  // Handle update_turn event from the server to update the current player turn
+  socket.on('update_turn', (data) => {
+    document.getElementById('current-player').innerText = data.currentPlayer;
+  });
+
+  // Handle update_board event from the server to update the game board
+  socket.on('update_board', (board) => {
+    updateBoard(board);
+  });
 
   // Function to handle game over event
   function handleGameOver(event) {

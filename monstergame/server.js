@@ -107,6 +107,7 @@ app.post('/end_turn', (req, res) => {
   if (game && game.turnOrder[game.currentPlayerIndex] === playerId) {
     game.turnsTaken[playerId] = true; // Mark the player's turn as taken
     console.log(`Player ${playerId} ended their turn in game ${gameId}`);
+    game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length; // Move to the next player's turn
     checkEndRound(game); // Check if the round should end
     io.to(gameId).emit('update_turn', { currentPlayer: game.turnOrder[game.currentPlayerIndex] }); // Emit turn update to all clients in the game
     res.json({ success: true });
@@ -241,12 +242,13 @@ function resolveConflict(game, x, y) {
       removeAllOfType(game, x, y, 'werewolf'); // Remove both werewolves if there are two werewolves
     } else if (types.filter(type => type === 'ghost').length > 1) {
       removeAllOfType(game, x, y, 'ghost'); // Remove both ghosts if there are two ghosts
-    }
+
       // After resolving the conflict, ensure only one monster remains
     if (remainingMonster) {
       game.board[x][y] = remainingMonster;
-    }
-  }
+     }
+   }
+ }
 }
 
 // Function to remove a specific type of monster from the board and track losses

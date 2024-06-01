@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let gameId, playerId;
   let selectedMonsterType = 'vampire'; // Default to vampire
   let selectedMonster = null; // To store the coordinates of the selected monster
+  let hasPlacedMonster = false; // Track if the player has placed a monster
 
   const socket = io(); // Initialize Socket.io
 
@@ -89,10 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (selectedMonster) {
       moveMonster(selectedMonster.x, selectedMonster.y, x, y); // Move the selected monster
     } else {
-      if (event.target.textContent === '') {
-        placeMonster(x, y); // Place a monster if the cell is empty
-      } else {
+      if (event.target.textContent === '' && !hasPlacedMonster) {
+        placeMonster(x, y); // Place a monster if the cell is empty and the player hasn't placed one yet
+      } else if (event.target.textContent !== '') {
         selectMonster(x, y); // Select a monster for movement
+      } else {
+        alert("You can only place one monster per turn.");
       }
     }
   }
@@ -107,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(response => response.json()).then(data => {
       if (data.success) {
         updateBoard(data.game.board); // Update the board if placement is successful
+        hasPlacedMonster = true; // Mark that the player has placed a monster
         checkEndTurn(); // Check if the turn should end automatically
       } else {
         alert(data.message); // Show an error message if placement is invalid
@@ -148,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(response => response.json()).then(data => {
       if (data.success) {
         console.log('Turn ended');
+        hasPlacedMonster = false; // Reset the flag for the next turn
         checkEndRound(); // Check if the round should end
       } else {
         alert(data.message); // Show an error message if ending the turn fails

@@ -33,7 +33,8 @@ app.post('/create_game', (req, res) => {
     currentPlayerIndex: 0, // Track the current player's index in the turn order
     turnsTaken: {}, // Track turns taken by each player in the current round
     eliminatedPlayers: {}, // Track eliminated players
-    playerLosses: {} // Track the number of monsters each player has lost
+    playerLosses: {}, // Track the number of monsters each player has lost
+    hasPlacedMonster: {}, // Track if a player has placed a monster this turn
   };
   totalGamesPlayed++; // Increment the total number of games played
   console.log(`Game created with ID: ${newGameId}. Total games played: ${totalGamesPlayed}`);
@@ -56,6 +57,7 @@ app.post('/join_game', (req, res) => {
     games[gameId].turnsTaken[playerId] = false; // Initialize turn taken to false for the player
     games[gameId].eliminatedPlayers[playerId] = false; // Initialize player as not eliminated
     games[gameId].playerLosses[playerId] = 0; // Initialize player loss count
+    games[gameId].hasPlacedMonster[playerId] = false; // Initialize hasPlacedMonster to false for the player
     console.log(`Player ${playerId} joined game ${gameId}`);
     res.json({ success: true });
   } else {
@@ -70,15 +72,16 @@ app.post('/place_monster', async (req, res) => {
   let game = games[gameId];
   console.log(`Player ${playerId} attempting to place ${monsterType} at (${x}, ${y}) in game ${gameId}`);
 
-  if (game && game.turnOrder[game.currentPlayerIndex] === playerId && isValidPlacement(game, playerId, x, y)) {
+  if (game && game.turnOrder[game.currentPlayerIndex] === playerId && !game.hasPlacedMonster[playerId] && isValidPlacement(game, playerId, x, y)) {
     // Ensure atomic placement
     await placeMonster(game, playerId, monsterType, x, y);
+    game.hasPlacedMonster[playerId] = true; // Mark that the player has placed a monster this turn
     console.log(`Monster placed by ${playerId} at (${x}, ${y})`);
     io.to(gameId).emit('update_board', game.board); // Emit board update to all clients in the game
     res.json({ success: true, game });
   } else {
     console.log(`Invalid placement or not ${playerId}'s turn`);
-    res.json({ success: false, message: "Invalid placement or not your turn" });
+    res.json({ success: false, message: "Invalid placement or not your turn, or you have already placed a monster" });
   }
 });
 
@@ -106,6 +109,7 @@ app.post('/end_turn', (req, res) => {
   let game = games[gameId];
   if (game && game.turnOrder[game.currentPlayerIndex] === playerId) {
     game.turnsTaken[playerId] = true; // Mark the player's turn as taken
+    game.hasPlacedMonster[playerId] = false; // Reset the flag for the next turn
     console.log(`Player ${playerId} ended their turn in game ${gameId}`);
     game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length; // Move to the next player's turn
     checkEndRound(game); // Check if the round should end
@@ -247,8 +251,8 @@ function resolveConflict(game, x, y) {
     if (remainingMonster) {
       game.board[x][y] = remainingMonster;
      }
-   }
- }
+    }
+  }
 }
 
 // Function to remove a specific type of monster from the board and track losses

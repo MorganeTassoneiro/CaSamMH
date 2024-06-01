@@ -35,6 +35,7 @@ app.post('/create_game', (req, res) => {
     eliminatedPlayers: {}, // Track eliminated players
     playerLosses: {}, // Track the number of monsters each player has lost
     hasPlacedMonster: {}, // Track if a player has placed a monster this turn
+    hasMovedMonster: {}, // Track if a player has moved a monster this turn
   };
   totalGamesPlayed++; // Increment the total number of games played
   console.log(`Game created with ID: ${newGameId}. Total games played: ${totalGamesPlayed}`);
@@ -58,6 +59,7 @@ app.post('/join_game', (req, res) => {
     games[gameId].eliminatedPlayers[playerId] = false; // Initialize player as not eliminated
     games[gameId].playerLosses[playerId] = 0; // Initialize player loss count
     games[gameId].hasPlacedMonster[playerId] = false; // Initialize hasPlacedMonster to false for the player
+    games[gameId].hasMovedMonster[playerId] = false; // Initialize hasMovedMonster to false for the player
     console.log(`Player ${playerId} joined game ${gameId}`);
     res.json({ success: true });
   } else {
@@ -91,15 +93,16 @@ app.post('/move_monster', async (req, res) => {
   let game = games[gameId];
   console.log(`Player ${playerId} attempting to move monster from (${fromX}, ${fromY}) to (${toX}, ${toY}) in game ${gameId}`);
 
-  if (game && game.turnOrder[game.currentPlayerIndex] === playerId && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
+  if (game && game.turnOrder[game.currentPlayerIndex] === playerId && !game.hasMovedMonster[playerId] && isValidMove(game, playerId, fromX, fromY, toX, toY)) {
     // Ensure atomic move
     await moveMonster(game, playerId, fromX, fromY, toX, toY);
+    game.hasMovedMonster[playerId] = true; // Mark that the player has moved a monster this turn
     console.log(`Monster moved by ${playerId} from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
     io.to(gameId).emit('update_board', game.board); // Emit board update to all clients in the game
     res.json({ success: true, game });
   } else {
     console.log(`Invalid move or not ${playerId}'s turn`);
-    res.json({ success: false, message: "Invalid move or not your turn" });
+    res.json({ success: false, message: "Invalid move or not your turn, or you have already moved a monster" });
   }
 });
 
@@ -110,6 +113,7 @@ app.post('/end_turn', (req, res) => {
   if (game && game.turnOrder[game.currentPlayerIndex] === playerId) {
     game.turnsTaken[playerId] = true; // Mark the player's turn as taken
     game.hasPlacedMonster[playerId] = false; // Reset the flag for the next turn
+    game.hasMovedMonster[playerId] = false; // Reset the flag for the next turn
     console.log(`Player ${playerId} ended their turn in game ${gameId}`);
     game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.turnOrder.length; // Move to the next player's turn
     checkEndRound(game); // Check if the round should end

@@ -47,9 +47,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }).then(response => response.json()).then(data => {
       console.log('Game created:', data);
       gameId = data.gameId; // Store the gameId for future requests
-      joinGame(gameId, `player${Math.floor(Math.random() * 4)}`); // Generate a random player ID
       fetchGameStats(); // Fetch and display updated game statistics
+      initializeBoard(); // Initialize the board once
+      createJoinButtons(); // Create join buttons for players
     });
+  }
+
+  // Function to create join buttons for players
+  function createJoinButtons() {
+    const joinButtonsContainer = document.createElement('div');
+    joinButtonsContainer.id = 'join-buttons';
+    document.body.appendChild(joinButtonsContainer);
+
+    for (let i = 1; i <= 4; i++) {
+      const button = document.createElement('button');
+      button.textContent = `Join as Player ${i}`;
+      button.addEventListener('click', () => joinGame(gameId, `player${i}`));
+      joinButtonsContainer.appendChild(button);
+    }
   }
 
   // Function to join a game
@@ -62,14 +77,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         console.log('Joined game:', data);
         playerId = player;
-        initializeBoard();
+        // Only initialize the board if it hasn't been initialized already
+        if (!document.querySelector('tr')) {
+          initializeBoard();
+        }
       } else {
         console.error('Failed to join game:', data.message);
       }
     });
   }
 
-  // Function to initialize the board with 10x10 grid
+  // Function to initialize the board with a 10x10 grid
   function initializeBoard() {
     for (let i = 0; i < 10; i++) {
       const row = document.createElement('tr'); // Create a row
